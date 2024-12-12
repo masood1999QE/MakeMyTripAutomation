@@ -2,8 +2,10 @@ package MakeMyTrip.MakeMyTripAutomation;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,8 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -21,7 +25,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import com.google.common.io.Files;
 
 /**
  * Unit test for simple App.
@@ -33,40 +40,9 @@ public class AppTest {
      * @throws IOException 
      * @throws InterruptedException 
      */
-    @Test
-    public void ReadExcelData() throws IOException, InterruptedException {
-    	
-    	XSSFWorkbook workBook;
-    	XSSFSheet sheet;
-    	
-    	String excelPath;
-    	
-    	
-    	excelPath=System.getProperty("user.dir")+File.separator+"resources"+File.separator+"TestData"+File.separator+"MakeMyTripData.xlsx";
-    	System.out.println("Excel Path:"+excelPath);   
-    	
-    	File path=new File(excelPath);
-		FileInputStream fis=new FileInputStream(path);
-		workBook=new XSSFWorkbook(fis);
-  	
-    	sheet=workBook.getSheet("Sheet1");
-    	int rowCount=sheet.getPhysicalNumberOfRows();
-    	System.out.println("RowCount:"+rowCount);
-    	//rowCount=sheet.getLastRowNum();
-    	System.out.println("Last Row:"+sheet.getLastRowNum());
-    	DataFormatter formatter=new DataFormatter();
-    	for(int i=1;i<rowCount;i++)
-    	{
-    		String FromcityName= formatter.formatCellValue(sheet.getRow(i).getCell(0));
-    		
-    		String TocityName= formatter.formatCellValue( sheet.getRow(i).getCell(1));
-    		String DepatureDate= formatter.formatCellValue(sheet.getRow(i).getCell(2));
-    		String ArrivalDate=  formatter.formatCellValue(sheet.getRow(i).getCell(3));
-    		String AdultsRange=  formatter.formatCellValue(sheet.getRow(i).getCell(4));
-    		String ChildrenRange= formatter.formatCellValue( sheet.getRow(i).getCell(5));
-    		String InfantRange=  formatter.formatCellValue(sheet.getRow(i).getCell(6));
-    		String TravelClass=  formatter.formatCellValue(sheet.getRow(i).getCell(7));
-    		
+    @Test(dataProvider="testData")
+    public void performSearch(String FromcityName,String TocityName,String DepatureDate,String ArrivalDate,String AdultsRange,String ChildrenRange,String InfantRange,String TravelClass,int rowIndex) throws Exception {
+
     		System.out.println("FromCityName:"+FromcityName);
     		System.out.println("TocityName:"+ TocityName);
     		System.out.println("DepatureDate:"+DepatureDate);
@@ -292,12 +268,15 @@ public class AppTest {
     			}
     		}
     		
-    		By travelClassLocator=By.cssSelector("p[data-cy='chooseTravelClass']+ul>li");
+    		By travelClassLocator=By.cssSelector("p[data-cy='chooseTravelClass']+ul>li[data-cy*='travelClass']");
     		List<WebElement> travelClasses=driver.findElements(travelClassLocator);
     		wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(travelClassLocator));
     		for(WebElement ele:travelClasses)
     		{
-    			if(ele.getText().contains(TravelClass))
+    			System.out.println("ele.getText():"+ele.getText());
+    			System.out.println("TravelClassTravelClass:"+TravelClass);
+    			System.out.println("ele.getText().equalsIgnoreCase(TravelClass)"+ele.getText().equalsIgnoreCase(TravelClass));
+    			if(ele.getText().equalsIgnoreCase(TravelClass)||(ele.getText().contains("new") && ele.getText().contains(TravelClass)))
     			{
     				ele.click();
     				break;
@@ -318,16 +297,98 @@ public class AppTest {
     			System.out.println("Radio Button Is Selected");
     		}
     		
+    		takeScreenshot(driver);
+    		
     		driver.close();
     		
-    		sheet.getRow(i).createCell(8).setCellValue("Pass");
+    		writeDataInTestDataExcelFile(rowIndex);
     		
-    		FileOutputStream fos=new FileOutputStream(path);
-    		workBook.write(fos);
-    	
-    		fos.flush();
-    	}
-    	workBook.close();
+    		
     	
     }
+    
+    @DataProvider(name="testData")
+    public Object readExcelTestData() throws Exception{
+    
+    	XSSFWorkbook workBook;
+    	XSSFSheet sheet;
+    	
+    	DataFormatter formatter=new DataFormatter();
+    	
+    	String excelPath;
+    	excelPath=System.getProperty("user.dir")+File.separator+"resources"+File.separator+"TestData"+File.separator+"MakeMyTripData.xlsx";
+    	FileInputStream fis=new FileInputStream(new File(excelPath));
+    	
+    	workBook=new XSSFWorkbook(fis);
+    	sheet=workBook.getSheet("Sheet1");
+    	int rowCount=sheet.getPhysicalNumberOfRows();
+    	System.out.println("Row Count:"+rowCount);
+    	int colCount=sheet.getRow(0).getLastCellNum();
+    	Object[][] testData=new Object[rowCount-1][colCount];
+    	System.out.println("Row Count:"+rowCount+" Column Count:"+colCount);
+    	System.out.println("Row Count:"+sheet.getLastRowNum()+" Column Count:"+sheet.getRow(sheet.getLastRowNum()).getLastCellNum());
+    	for(int i=1,row=0;i<rowCount;i++,row++)
+    	{
+    		for(int j=0;j<colCount-1;j++)
+    		{
+    			//System.out.println("Data at i:"+i+" j:"+j+" is "+formatter.formatCellValue(sheet.getRow(i).getCell(j)));
+    			testData[row][j]=formatter.formatCellValue(sheet.getRow(i).getCell(j));
+    			//System.out.println("Matrix Row Count:"+row);
+    		}
+    		testData[row][colCount-1]=i;
+    	}
+    	
+    	workBook.close();
+    	return testData;
+    }
+    
+    public void writeDataInTestDataExcelFile(int rowIndex) throws Exception {
+    	
+    	XSSFWorkbook workBook;
+    	XSSFSheet sheet;
+    	
+    	String excelPath;
+    	excelPath=System.getProperty("user.dir")+File.separator+"resources"+File.separator+"TestData"+File.separator+"MakeMyTripData.xlsx";
+    	FileInputStream fis=new FileInputStream(new File(excelPath));
+    	workBook=new XSSFWorkbook(fis);
+    	sheet=workBook.getSheetAt(0);
+		sheet.getRow(rowIndex).createCell(8).setCellValue("Pass");
+		
+		FileOutputStream fos=new FileOutputStream(excelPath);
+		workBook.write(fos);
+	
+		fos.flush();
+		workBook.close();
+    	
+    	return;
+    }
+    
+    public void takeScreenshot(WebDriver driver) throws Exception
+    {
+    	TakesScreenshot screenShot=(TakesScreenshot) driver;
+    	File screenShotFileSrc= screenShot.getScreenshotAs(OutputType.FILE);
+    	
+    	String destinationPath=System.getProperty("user.dir")+File.separator+"results"+File.separator+getTimeStamp()+".png";
+    	System.out.println("destinationPath:"+destinationPath);
+    	Files.copy(screenShotFileSrc, new File(destinationPath));
+    	
+    }
+    
+    @Test
+    public String getTimeStamp() {
+    	
+    	Timestamp timestamp=new Timestamp(System.currentTimeMillis());
+    	System.out.println("TimeStamp:"+timestamp);
+    	
+    	String timeStampString=timestamp.toString();
+    	System.out.println("TimeStampString:"+timeStampString);
+    	String arr[]=timeStampString.split("\\.");
+    	
+    	String arr1[]=arr[0].split(":");
+    	String result=arr1[0]+"-"+arr1[1]+"-"+arr1[2];
+    	System.out.println("result"+result);
+    	return result;
+    }
+    
 }
+

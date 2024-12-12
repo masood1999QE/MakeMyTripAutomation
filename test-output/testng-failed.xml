@@ -5,7 +5,7 @@
     <classes>
       <class name="MakeMyTrip.MakeMyTripAutomation.AppTest">
         <methods>
-          <include name="ReadExcelData"/>
+          <include name="performSearch" invocation-numbers="0 1 2 3 4"/>
         </methods>
       </class> <!-- MakeMyTrip.MakeMyTripAutomation.AppTest -->
     </classes>
