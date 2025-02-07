@@ -53,9 +53,11 @@ public class App {
 		
 		try {
 			wait.until(ExpectedConditions.elementToBeClickable(closeModal));
+	
 			WebElement closeModalEle=driver.findElement(closeModal);
-			
+						
 			closeModalEle.click();
+		
 			
 		}
 		catch(Exception e)

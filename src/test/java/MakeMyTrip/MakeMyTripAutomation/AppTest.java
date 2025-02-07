@@ -5,10 +5,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -20,11 +23,16 @@ import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -53,8 +61,39 @@ public class AppTest {
     		System.out.println("TravelClass:"+TravelClass);
     		
     		System.out.println("End of Data Sets");
+
     		
-    		WebDriver driver =new ChromeDriver();
+    		EdgeOptions browserOptions = new EdgeOptions();
+    		browserOptions.setPlatformName("Windows 11");
+    		browserOptions.setBrowserVersion("131");
+    		HashMap<String, Object> ltOptions = new HashMap<String, Object>();
+    		ltOptions.put("username", "ayishanaznee");
+    		ltOptions.put("accessKey", "4Xnbo8fQHaD5ujtkRrijjTNesnyL0fYgbAppuln5dEkMiy4FZM");
+    		ltOptions.put("visual", true);
+    		ltOptions.put("video", true);
+    		ltOptions.put("network", true);
+    		ltOptions.put("build", "MakeMyTrip");
+    		ltOptions.put("project", "MakeMyTripAutomation");
+  
+    		ltOptions.put("console", "true");
+    		ltOptions.put("w3c", true);
+    		browserOptions.setCapability("LT:Options", ltOptions);
+    		
+    		//4Xnbo8fQHaD5ujtkRrijjTNesnyL0fYgbAppuln5dEkMiy4FZM
+    		//WebDriver driver =new RemoteWebDriver(new URL("https://ayishanaznee:4Xnbo8fQHaD5ujtkRrijjTNesnyL0fYgbAppuln5dEkMiy4FZM@hub.lambdatest.com/wd/hub"),browserOptions);
+    		
+    		ChromeOptions browserChromeOptions=new ChromeOptions();
+    		 // Create a map for Chrome preferences
+            Map<String, Object> prefs = new HashMap<>();
+            prefs.put("profile.default_content_setting_values.notifications", 2);  // Disable notifications
+            browserChromeOptions.setExperimentalOption("prefs", prefs);
+    		
+    		browserChromeOptions.addArguments("--disable-infobars");
+    		browserChromeOptions.addArguments("--disable-extensions");
+    		browserChromeOptions.addArguments("--disable-automation");
+    		browserChromeOptions.addArguments("--disable-blink-features=AutomationControlled"); 
+    		
+    		WebDriver driver =new ChromeDriver(browserChromeOptions);
     		driver.manage().window().maximize();
     		driver.get("https://www.makemytrip.com/");
     		
@@ -163,8 +202,6 @@ public class AppTest {
     			}
     			
     		}	
-    		    	
-    		List<WebElement> StartDatecalendarList=new ArrayList<>();
     		
     		By startDateElementLocator=By.cssSelector("div[class*='searchToCity']+div[class*='dates']");
     		WebElement startDateElement=driver.findElement(startDateElementLocator);
@@ -176,55 +213,54 @@ public class AppTest {
     		Actions act=new Actions(driver);
     		act.scrollByAmount(0, 100).build().perform();
     		
-    		By startDateLocator=By.cssSelector("div[class='DayPicker-Month']:nth-child(1) div[class*='DayPicker-Day']");
-    		StartDatecalendarList=driver.findElements(startDateLocator);
-    		System.out.println("Start Date Selection");
-    		for(WebElement ele:StartDatecalendarList)
+    		int index=selectReturnDateMonth(driver,wait,DepatureDate);
+    		if(index==-1)
     		{
-    			//System.out.println(ele.getAttribute("class"));
-    			String className=ele.getAttribute("class");
-    			if(!(className.contains("DayPicker-Day--outside") || className.contains("DayPicker-Day--disabled")))
-    			{
-    				WebElement eleText=ele.findElement(By.cssSelector("p:nth-child(1)"));
-    				System.out.println("Day:"+eleText.getText());
-    				if(eleText.getText().contains(DepatureDate))
-    				{
-    					eleText.click();
-    					break;
-    				}
-    				
-    			}
+    			System.out.println("Unable to find the Depature given month in the calendar");
+    			takeScreenshot(driver);
+    			driver.close();
+    			return;
+    		}
+    		By startDateLocator=By.cssSelector("div[class='DayPicker-Month']:nth-child("+index+") div[class*='DayPicker-Day']");
+    		boolean isDayDateSelected=selectDayDate(driver,wait,startDateLocator,DepatureDate);
+    		System.out.println("Depature Day Date Selection");
+    		if(!isDayDateSelected)
+    		{
+    			System.out.println("Unable to find the given Depature day date in the calendar");
+    			takeScreenshot(driver);
+    			driver.close();
+    			return;
     			
     		}
+    		
     		System.out.println("Return Date Selection");
     		By returnDateCalendarBtnLocator=By.cssSelector("div[class*='reDates']");
     		WebElement returnDateCalendarBtn=driver.findElement(returnDateCalendarBtnLocator);
     		returnDateCalendarBtn.click();
     		
     		Thread.sleep(5000);
-    		
-    		List<WebElement> ReturnDatecalendarList=new ArrayList<>();
-    		By ReturnDateLocator=By.cssSelector("div[class='DayPicker-Month']:nth-child(2) div[class*='DayPicker-Day']");
-    		ReturnDatecalendarList=driver.findElements(ReturnDateLocator);
-    		wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(ReturnDateLocator));
-    		
-    		for(WebElement ele:ReturnDatecalendarList)
+    		index=selectReturnDateMonth(driver,wait,ArrivalDate);
+    		if(index==-1)
     		{
-    			
-    			String className=ele.getAttribute("class");
-    			if(!(className.contains("DayPicker-Day--outside") || className.contains("DayPicker-Day--disabled")))
-    			{
-    				WebElement eleText=ele.findElement(By.cssSelector("p:nth-child(1)"));
-    				System.out.println("Day:"+eleText.getText());
-    				if(eleText.getText().contains(ArrivalDate))
-    				{
-    					eleText.click();
-    					break;
-    				}
-    				
-    			}
+    			System.out.println("Unable to find the given Arrival month in the calendar");
+    			takeScreenshot(driver);
+    			driver.close();
+    			return;
+    		}
+    		
+    		By ReturnDateLocator=By.cssSelector("div[class='DayPicker-Month']:nth-child("+index+") div[class*='DayPicker-Day']");
+    		isDayDateSelected=selectDayDate(driver,wait,ReturnDateLocator,ArrivalDate);
+    		System.out.println("Arrival Day Date Selection");
+    		if(!isDayDateSelected)
+    		{
+    			System.out.println("Unable to find the given Arrival day date in the calendar");
+    			takeScreenshot(driver);
+    			driver.close();
+    			return;
     			
     		}
+    		
+    		
     		
     		By flightTravellerLocator = By.cssSelector("div[data-cy='flightTraveller']");
     		WebElement flightTravellerElement=driver.findElement(flightTravellerLocator);
@@ -297,14 +333,104 @@ public class AppTest {
     			System.out.println("Radio Button Is Selected");
     		}
     		
-    		takeScreenshot(driver);
+    		By searchBtnLocator=By.xpath("//a[contains(text(),'Search')]");
+    		WebElement searchBtnLocatorEle=driver.findElement(searchBtnLocator);
+    		searchBtnLocatorEle.click();
     		
-    		driver.close();
+    		takeScreenshot(driver);
+
+    		By popUpLocator=By.xpath("//p[contains(text(),'Now Lock Prices & Pay Later!')]");
+    		wait.until(ExpectedConditions.visibilityOfElementLocated(popUpLocator));
+    		WebElement popUpBtnEle=driver.findElement(popUpLocator);
+    		Assert.assertTrue(popUpBtnEle.getText().contains("Now Lock Prices & Pay Later!"));
+    		
+    		By closePopUpLocator=By.cssSelector("div[class='commonOverlay '] span[class*='overlayCrossIcon']");
+    		WebElement closePopUpBtnEle=driver.findElement(closePopUpLocator);
+    		closePopUpBtnEle.click();
+    		
+    	//	driver.close();
     		
     		writeDataInTestDataExcelFile(rowIndex);
     		
-    		
+    		System.out.println("Test Executed Successfully");
     	
+    }
+    
+    public int selectReturnDateMonth(WebDriver driver,WebDriverWait wait,String inputMonth)
+    {
+    	By calendarMonthCaption=By.cssSelector("div[class='DayPicker-Month'] div[class*='DayPicker-Caption']");
+    	wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(calendarMonthCaption));
+    	List<WebElement> months=new ArrayList<>();
+    	months=driver.findElements(calendarMonthCaption);
+    	System.out.println("List Size:"+months.size());
+    	
+    	int index=-1;
+    	while(index==-1)
+    	{
+	    	for(int i=0;i<months.size();i++)
+	    	{
+	    		System.out.println("Return Month:"+months.get(i).getText());
+	    		System.out.println("Arrrival  Day:"+inputMonth.split("[ /-]")[0]);
+	    		System.out.println("Arrrival  Month:"+inputMonth.split("[ /-]")[1]);
+	    		System.out.println("Arrrival  Year:"+inputMonth.split("[ /-]")[2]);
+	    		
+	    		System.out.println("compare:"+ months.get(i).getText().contains(inputMonth.split("[ /-]")[1]));
+	    		if(months.get(i).getText().contains(inputMonth.split("[ /-]")[1])  && months.get(i).getText().contains(inputMonth.split("[ /-]")[2]))
+	    		{
+	    			System.out.println("Matched Month"+ months.get(i).getText());
+	    			index=i+1;
+	    			break;
+	    		}
+	    	}
+    	
+	    	if(index==-1)
+	    	{
+		    	By nextBtnLocator=By.cssSelector("span[role='button'][aria-label='Next Month']");
+		    	try {
+				    	wait.until(ExpectedConditions.elementToBeClickable(nextBtnLocator));
+				    	WebElement nextBtn=driver.findElement(nextBtnLocator);
+				    	nextBtn.click();  	
+		    		}
+		    	catch(Exception e)
+		    	{
+		    		
+		    		System.out.println("Next Button doesn't exists");
+		    		break;
+		    	}
+	    	}
+    	}
+    	
+    	return index;
+    }
+    
+    public boolean selectDayDate(WebDriver driver,WebDriverWait wait,By dateElementLocator,String inputDate) {
+  
+    	System.out.println("Input Day Date Split inside "+inputDate.split("[ /-]")[0]);
+    	List<WebElement> ReturnDatecalendarList=new ArrayList<>();
+		ReturnDatecalendarList=driver.findElements(dateElementLocator);
+		wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(dateElementLocator));
+		boolean isClicked=false;
+		for(WebElement ele:ReturnDatecalendarList)
+		{
+			
+			String className=ele.getAttribute("class");
+			if(!(className.contains("DayPicker-Day--outside") || className.contains("DayPicker-Day--disabled")))
+			{
+				WebElement eleText=ele.findElement(By.cssSelector("p:nth-child(1)"));
+				System.out.println("Day:"+eleText.getText());
+				if(eleText.getText().contains(inputDate.split("[ /-]")[0]))
+				{
+					eleText.click();
+					isClicked=true;
+					System.out.println("Day is Clicked:"+isClicked);
+					break;
+				}
+				
+			}
+			
+		}
+		System.out.println("outer loop Day is Clicked:"+isClicked);
+		return isClicked;
     }
     
     @DataProvider(name="testData")
