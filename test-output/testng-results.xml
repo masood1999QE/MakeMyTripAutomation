@@ -2,12 +2,12 @@
 <testng-results ignored="0" total="1" passed="1" failed="0" skipped="0">
   <reporter-output>
   </reporter-output>
-  <suite started-at="2025-02-02T23:49:45 IST" name="Default suite" finished-at="2025-02-02T23:50:42 IST" duration-ms="57763">
+  <suite started-at="2025-02-08T15:44:39 IST" name="Default suite" finished-at="2025-02-08T15:45:30 IST" duration-ms="51356">
     <groups>
     </groups>
-    <test started-at="2025-02-02T23:49:45 IST" name="Default test" finished-at="2025-02-02T23:50:42 IST" duration-ms="57763">
+    <test started-at="2025-02-08T15:44:39 IST" name="Default test" finished-at="2025-02-08T15:45:30 IST" duration-ms="51356">
       <class name="MakeMyTrip.MakeMyTripAutomation.AppTest">
-        <test-method signature="performSearch(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int)[pri:0, instance:MakeMyTrip.MakeMyTripAutomation.AppTest@26d9b808]" started-at="2025-02-02T23:49:45 IST" name="performSearch" data-provider="testData" finished-at="2025-02-02T23:50:42 IST" duration-ms="56987" status="PASS">
+        <test-method signature="performSearch(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int)[pri:0, instance:MakeMyTrip.MakeMyTripAutomation.AppTest@26d9b808]" started-at="2025-02-08T15:44:40 IST" name="performSearch" data-provider="testData" finished-at="2025-02-08T15:45:30 IST" duration-ms="50572" status="PASS">
           <params>
             <param index="0">
               <value>
@@ -21,7 +21,7 @@
             </param>
             <param index="2">
               <value>
-                <![CDATA[21 January 2025]]>
+                <![CDATA[8 February 2025]]>
               </value>
             </param>
             <param index="3">
