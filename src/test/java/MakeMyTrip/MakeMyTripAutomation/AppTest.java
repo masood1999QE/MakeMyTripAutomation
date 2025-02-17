@@ -10,9 +10,11 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -35,6 +37,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 
 import com.google.common.io.Files;
 
@@ -349,8 +352,107 @@ public class AppTest {
     		closePopUpBtnEle.click();
     		
     	//	driver.close();
+    		
+    		By arrowUpLocator=By.xpath("//span[contains(@class,'arrowUp')]");
+    		
+    		WebElement arrowUpWebEle=wait.until(ExpectedConditions.elementToBeClickable(arrowUpLocator));
+    		arrowUpWebEle.click();
+    		
+    		
+    		By  lists = By.cssSelector("div[class*='splitviewSticky'] div[class*='appendRight']");
+    		
+    		List<WebElement> listsWebEle = new ArrayList<>();
+    		listsWebEle	=driver.findElements(lists); 
+    		int listSize= listsWebEle.size();
+    		System.out.println("Lists Size:"+listSize);
+    		ArrayList<String> arr1=new ArrayList<String>(); 
+    		for(WebElement ele:listsWebEle)
+    		{
+    			System.out.println("WebElement getText:"+ele.getText());
+    			arr1.add(ele.getText());
+    		}
+    		List <String> prices=new ArrayList<String>();
+    		for(String ls:arr1)
+    		{
+    			String str[]= ls.split("\n");
+    			System.out.println("Before Format");
+        		for(String st: str) {
+        			System.out.println("After Formatting:"+st);
+        			if(st.contains("₹"))
+        			{
+        				prices.add(st.split(" ")[1]);
+        				
+        			}
+        			
+        		}
+    		}
+    		List<Integer> pricesInt=new ArrayList<Integer>();
+    		for(String price:prices)
+    		{
+    			System.out.println("Ticket price:"+price);
+    			int num=Integer.parseInt(price.split(",")[0]+price.split(",")[1]); 
+    			pricesInt.add(num);
+    			System.out.println("Price converted into num:"+num);
+    		}
+    		
+    		System.out.println("Price 1+ price 2:"+Integer.valueOf(pricesInt.get(0)+pricesInt.get(1)));
+    		Assert.assertTrue(Integer.valueOf(pricesInt.get(0)+pricesInt.get(1)).equals(pricesInt.get(2)));
+    		
+    		By bookNowLocator=By.xpath("//div[contains(@class,'stickyFlightDtl')]//button[contains(text(),'Book')]");
+    		WebElement bookNowele=wait.until(ExpectedConditions.elementToBeClickable(bookNowLocator));
+    		bookNowele.click();
+    		
+    		By optionsWindow=By.cssSelector("ul[class*='ffTabList'] li[class*='active']");
+    		WebElement optionsWindowEle=wait.until(ExpectedConditions.visibilityOfElementLocated(optionsWindow));
+    		Assert.assertTrue(optionsWindowEle.getText().equalsIgnoreCase("Onward"));
+    		
+    		By windowBtnLocator=By.xpath("//div[@class='makeFlex']//button[contains(@class,'buttonPrimary')]");
+    		WebElement windowBtnEle=wait.until(ExpectedConditions.elementToBeClickable(windowBtnLocator));
+    		System.out.println("Window Bottom Locator Text:"+windowBtnEle.getText());
+    		Assert.assertTrue(windowBtnEle.getText().equalsIgnoreCase("continue"));
+    		
+    		By optionsWindow2=By.cssSelector("ul[class*='ffTabList'] li:not(.active)");
+    		WebElement optionsWindow2BtnEle=wait.until(ExpectedConditions.elementToBeClickable(optionsWindow2));
+    		optionsWindow2BtnEle.click();
+    		 
+    		 
+    		By windowBtnLocator2=By.xpath("//div[@class='makeFlex']//button[contains(@class,'buttonPrimary')]");
+    		WebElement windowBtnEle2=wait.until(ExpectedConditions.elementToBeClickable(windowBtnLocator));
+    		System.out.println("Window Bottom Locator Text:"+windowBtnEle2.getText());
+    		Assert.assertTrue(windowBtnEle2.getText().equalsIgnoreCase("book now"));
+    		windowBtnEle2.click();
+    		
+    		String orginalWindowHandle=driver.getWindowHandle();
+    		Set<String> handles=driver.getWindowHandles();
+    		for(String handle:handles)
+    		{
+    			if(!handle.equals(orginalWindowHandle))
+    			{
+    				driver.switchTo().window(handle);
+    				
+    				String currentURL=driver.getCurrentUrl();
+    	    		System.out.println("currentURL:"+ currentURL);
+    	    		SoftAssert assert1=new SoftAssert();
+    	    		wait.until(ExpectedConditions.urlContains("reviewDetails"));
+    	    		assert1.assertTrue(currentURL.contains("reviewDetails"));
+    	    		
+    	    		By reviewPageHeaderLocator=By.xpath("//h2[@data-test='component-title' and contains(text(),'Complete your booking')]");
+    	    		WebElement reviewPageHeaderEle=wait.until(ExpectedConditions.visibilityOfElementLocated(reviewPageHeaderLocator));
+    	    		System.out.println("reviewPageHeaderEle Text:"+ reviewPageHeaderEle.getText());
+    	    		assert1.assertTrue(reviewPageHeaderEle.getText().contains("Complete your booking"));
+    	    		assert1.assertAll();
+    			}
+    		}
+    		
+    		
+    		//driver.switchTo().window(orginalWindowHandle);
+    		
+    		
+    		
     		//I need to check this piece of code 
     		writeDataInTestDataExcelFile(rowIndex);
+    		
+    		
     		
     		System.out.println("Test Executed Successfully");
     	
@@ -418,7 +520,7 @@ public class AppTest {
 			{
 				WebElement eleText=ele.findElement(By.cssSelector("p:nth-child(1)"));
 				System.out.println("Day:"+eleText.getText());
-				if(eleText.getText().contains(inputDate.split("[ /-]")[0]))
+				if(eleText.getText().equalsIgnoreCase(inputDate.split("[ /-]")[0]))
 				{
 					eleText.click();
 					isClicked=true;
